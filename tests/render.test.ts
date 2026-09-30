@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { renderSignature, buildEmail } from "../lib/signature/render";
+import { renderSignature, buildEmail, looksDoublePrefixed } from "../lib/signature/render";
 import type { Hotel } from "../lib/types";
 
 const bis: Hotel = {
@@ -38,8 +38,18 @@ test("escapes user input", () => {
   assert.match(html, /&lt;img src=x/);
 });
 
-test("buildEmail applies the hotel prefix exactly once", () => {
+test("buildEmail keeps full addresses as typed and patterns only bare local parts", () => {
   assert.equal(buildEmail(bis, "om"), "istanbul.om@barcelo.com");
   assert.equal(buildEmail(bis, "istanbul.om"), "istanbul.om@barcelo.com");
   assert.equal(buildEmail(bis, "istanbul.om@barcelo.com"), "istanbul.om@barcelo.com");
+  // regression: a real address outside the hotel pattern must not get the prefix glued on
+  assert.equal(buildEmail(bis, "it.istanbul@barcelo.com"), "it.istanbul@barcelo.com");
+  assert.equal(buildEmail(bis, " IT.Istanbul@Barcelo.com "), "it.istanbul@barcelo.com");
+  assert.equal(buildEmail(bis, "marketing.tr@barcelo.com"), "marketing.tr@barcelo.com");
+});
+
+test("looksDoublePrefixed flags the prefix glued onto a hotel-named local part", () => {
+  assert.equal(looksDoublePrefixed(bis, "istanbul.it.istanbul@barcelo.com"), true);
+  assert.equal(looksDoublePrefixed(bis, "istanbul.om@barcelo.com"), false);
+  assert.equal(looksDoublePrefixed(bis, "it.istanbul@barcelo.com"), false);
 });

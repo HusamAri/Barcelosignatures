@@ -7,7 +7,6 @@ export function UserForm({
 }: {
   hotels: Hotel[]; groups: Group[]; user?: SigUserWithRelations; action: (formData: FormData) => Promise<void>; submitLabel: string;
 }) {
-  const localPart = user ? user.email.replace(/@.*$/, "").replace(new RegExp(`^${escapeRe(user.hotel.email_prefix)}`), "") : "";
   const manualGroups = groups.filter((g) => !g.hotel_id);
   return (
     <form action={action} className="grid gap-4 sm:grid-cols-2">
@@ -26,12 +25,12 @@ export function UserForm({
             <option key={h.id} value={h.id}>{h.name}</option>
           ))}
         </select>
-        <p className="mt-1 text-[11px] text-muted">Sets the prefix and domain: {hotels.map((h) => `${h.id}: ${h.email_prefix || "(none)"}…@${h.email_domain}`).join(" · ")}</p>
+        <p className="mt-1 text-[11px] text-muted">Sets address, phone and logo line of the signature.</p>
       </div>
       <div>
-        <label htmlFor="email_local">E-posta (prefix hariç) / Email local part</label>
-        <input id="email_local" name="email_local" required defaultValue={localPart} placeholder="om" />
-        <p className="mt-1 text-[11px] text-muted">Type only the part after the hotel prefix. Full addresses are accepted too.</p>
+        <label htmlFor="email_local">E-posta / Email</label>
+        <input id="email_local" name="email_local" required defaultValue={user?.email ?? ""} placeholder="it.istanbul@barcelo.com" autoComplete="off" />
+        <p className="mt-1 text-[11px] text-muted">Tam adresi yaz, olduğu gibi kaydedilir. Sadece @ öncesini yazarsan otelin kalıbı eklenir (istanbul.om → istanbul.om@barcelo.com).</p>
       </div>
       <div>
         <label htmlFor="mobile">Mobil (M)</label>
@@ -58,8 +57,4 @@ export function UserForm({
       </div>
     </form>
   );
-}
-
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

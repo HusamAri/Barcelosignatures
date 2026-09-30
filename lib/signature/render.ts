@@ -149,9 +149,25 @@ ${table}
 `;
 }
 
-/** Builds the full email address the way the builders did: fixed hotel prefix + free part + domain. */
-export function buildEmail(hotel: Hotel, localPart: string): string {
-  const local = localPart.trim().toLowerCase().replace(/@.*$/, "");
-  const withPrefix = hotel.email_prefix && !local.startsWith(hotel.email_prefix) ? hotel.email_prefix + local : local;
-  return `${withPrefix}@${hotel.email_domain}`;
+/**
+ * Resolves what an admin typed into a full address.
+ * - Anything containing "@" is taken as the full address, exactly as typed (lower-cased).
+ *   Real addresses do not always follow the hotel pattern (it.istanbul@barcelo.com).
+ * - Only a bare local part gets the hotel pattern: prefix (once) + local + @domain.
+ */
+export function buildEmail(hotel: Hotel, typed: string): string {
+  const raw = typed.trim().toLowerCase().replace(/\s+/g, "");
+  if (raw.includes("@")) return raw;
+  const local = hotel.email_prefix && !raw.startsWith(hotel.email_prefix) ? hotel.email_prefix + raw : raw;
+  return `${local}@${hotel.email_domain}`;
+}
+
+/** Flags addresses where the hotel prefix was applied on top of a local part that already names the hotel. */
+export function looksDoublePrefixed(hotel: Pick<Hotel, "email_prefix">, email: string): boolean {
+  const prefix = hotel.email_prefix;
+  if (!prefix) return false;
+  const local = email.split("@")[0] ?? "";
+  if (!local.startsWith(prefix)) return false;
+  const name = prefix.replace(/\.$/, "");
+  return local.slice(prefix.length).split(".").includes(name);
 }

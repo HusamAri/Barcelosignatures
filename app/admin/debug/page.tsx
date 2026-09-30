@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { appUrl } from "@/lib/env";
 import { mailConfigured } from "@/lib/mail";
 import { resolveBannerForToken } from "@/lib/banners/resolve";
+import { looksDoublePrefixed } from "@/lib/signature/render";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,16 @@ export default async function DebugPage() {
       const r = await resolveBannerForToken(u.token as string);
       checks.push({ name: `Resolver for ${u.full_name}`, ok: Boolean(r), detail: r ? `${r.resolved.source} → ${r.resolved.imageUrl}` : "user not found by token" });
     }
+  }
+
+  // Data sanity
+  {
+    const { data: users } = await admin.from("sig_users").select("full_name, email, hotel:hotels(email_prefix, email_domain)");
+    const rows = (users ?? []) as unknown as { full_name: string; email: string; hotel: { email_prefix: string; email_domain: string } | null }[];
+    const doubled = rows.filter((u) => u.hotel && looksDoublePrefixed(u.hotel, u.email));
+    checks.push({ name: "User emails", ok: doubled.length === 0, detail: doubled.length ? `hotel prefix doubled: ${doubled.map((u) => `${u.full_name} <${u.email}>`).join(", ")}` : `${rows.length} addresses look well-formed` });
+    const bad = rows.filter((u) => !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(u.email));
+    if (bad.length) checks.push({ name: "Invalid emails", ok: false, detail: bad.map((u) => `${u.full_name} <${u.email}>`).join(", ") });
   }
 
   checks.push({ name: "Total check time", ok: true, detail: `${Date.now() - t0} ms` });
