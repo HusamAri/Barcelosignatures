@@ -1,28 +1,41 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { bootstrapAdminEmails } from "@/lib/env";
+import { SESSION_COOKIE, verifySession } from "@/lib/auth/session";
 
 export interface AdminSession {
   email: string;
 }
 
-/** Is this email allowed into /admin? Bootstrap list from env, otherwise the admins table. */
-export async function isAllowedAdmin(email: string): Promise<boolean> {
-  const lower = email.toLowerCase();
-  if (bootstrapAdminEmails().includes(lower)) return true;
-  const admin = createAdminClient();
-  const { data } = await admin.from("admins").select("email").ilike("email", lower).maybeSingle();
-  return Boolean(data);
+export interface AdminRow {
+  email: string;
+  name: string | null;
+  password_hash: string | null;
+  must_change_password: boolean;
+  last_login_at: string | null;
+  added_at: string;
 }
 
-/** Server components and actions call this first. Redirects when the visitor is not an admin. */
+export async function findAdmin(email: string): Promise<AdminRow | null> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("admins").select("*").ilike("email", email.toLowerCase()).maybeSingle();
+  return (data as AdminRow | null) ?? null;
+}
+
+/** Bootstrap list from env: these addresses may sign in with the initial PIN even before a row exists. */
+export function isBootstrapAdmin(email: string): boolean {
+  return bootstrapAdminEmails().includes(email.toLowerCase());
+}
+
+/** Server components and actions call this first. Redirects when the visitor is not a signed-in admin. */
 export async function requireAdmin(): Promise<AdminSession> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) redirect("/login");
-  if (!(await isAllowedAdmin(user.email))) redirect("/login?error=not_admin");
-  return { email: user.email };
+  const store = await cookies();
+  const session = await verifySession(store.get(SESSION_COOKIE)?.value);
+  if (!session) redirect("/login");
+  if (session.mustChange) redirect("/change-password");
+  const row = await findAdmin(session.email);
+  if (!row) redirect("/login?error=not_admin");
+  if (row.must_change_password) redirect("/change-password");
+  return { email: row.email };
 }

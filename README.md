@@ -25,14 +25,16 @@ Known limit: the banner is resolved when the email is *opened*, not when it was 
 
 ## Stack
 
-Next.js 15 (App Router, server actions), TypeScript strict, Tailwind v4, Supabase (Postgres, Storage, Auth magic links), Nodemailer over Microsoft 365 SMTP. Hosted on Vercel.
+Next.js 15 (App Router, server actions), TypeScript strict, Tailwind v4, Supabase (Postgres, Storage), Nodemailer over Microsoft 365 SMTP. Hosted on Vercel.
+
+Admin sign-in is email plus password, stored as scrypt hashes in the `admins` table with a signed session cookie. New admins start with PIN `0000` and must set a password at first login. Supabase Auth is not used.
 
 ## Setup
 
-1. Create a Supabase project. In the SQL editor run `supabase/migrations/0001_init.sql`, then `supabase/seed.sql`, then `notify pgrst, 'reload schema';` so the API picks up the new tables and relationships immediately.
+1. Create a Supabase project. In the SQL editor run the files in `supabase/migrations/` in order, then `supabase/seed.sql`, then `notify pgrst, 'reload schema';` so the API picks up the new tables and relationships immediately.
 2. Copy `.env.example` to `.env.local` and fill it. `NEXT_PUBLIC_APP_URL` must be the final production domain, because it is baked into every installed signature.
-3. In Supabase Auth settings, add `https://APP/auth/callback` to the redirect URLs and enable the Email provider.
-4. `npm install`, then `npm run dev`. Sign in at `/login` with an address from `ADMIN_EMAILS` or the `admins` table.
+3. `npm install`, then `npm run dev`.
+4. Sign in at `/login` with an address from `ADMIN_EMAILS` and PIN `0000`, then set your password. Add colleagues under Admins.
 5. On Vercel, turn Deployment Protection (Vercel Authentication) off for this project. Colleagues open their install links and mail clients load `/b/{token}` without any Vercel session.
 6. Upload the current carousel banner under Banners and click Make default.
 
@@ -54,7 +56,7 @@ app/
   s/[token]         personal install page with Copy button and .htm download
   b/[token]         dynamic banner redirect
   c/[token]         click redirect with logging
-  login, auth/      magic-link sign-in for admins
+  login, change-password, admin/admins   password sign-in for admins
 lib/
   signature/        renderer ported from the builders (format.ts, render.ts)
   banners/resolve   pure schedule selection logic (tested)

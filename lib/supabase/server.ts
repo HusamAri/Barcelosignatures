@@ -1,26 +1,10 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { supabaseEnv } from "./env";
+import { createAdminClient } from "./admin";
 
-/** Session-bound client for admin pages and server actions (RLS applies). */
+/**
+ * Data access for admin pages and server actions. Authorization happens in
+ * requireAdmin() before any of this runs, so the service-role client is used;
+ * RLS still blocks every direct API call made with the public key.
+ */
 export async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    supabaseEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    supabaseEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-          } catch {
-            // Called from a Server Component: cookies are refreshed by the middleware instead.
-          }
-        },
-      },
-    },
-  );
+  return createAdminClient();
 }
