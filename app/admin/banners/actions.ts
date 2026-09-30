@@ -77,7 +77,10 @@ export async function deleteBanner(id: string): Promise<void> {
   if (error) back({ error: error.message });
   if (data?.storage_path) await createAdminClient().storage.from("banners").remove([data.storage_path as string]);
   const def = await getSetting<string | null>("default_banner_id", null);
-  if (def === id) await supabase.from("settings").update({ value: null }).eq("key", "default_banner_id");
+  if (def === id) {
+    const { error: clearErr } = await supabase.from("settings").update({ value: null }).eq("key", "default_banner_id");
+    if (clearErr) back({ error: `Banner deleted, but clearing the default failed: ${clearErr.message}` });
+  }
   revalidatePath("/admin/banners");
   revalidatePath("/admin/schedule");
   back({ ok: "Banner deleted. Schedules using it were removed too." });
