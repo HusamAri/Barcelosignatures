@@ -29,11 +29,12 @@ Next.js 15 (App Router, server actions), TypeScript strict, Tailwind v4, Supabas
 
 ## Setup
 
-1. Create a Supabase project. In the SQL editor run `supabase/migrations/0001_init.sql`, then `supabase/seed.sql`.
+1. Create a Supabase project. In the SQL editor run `supabase/migrations/0001_init.sql`, then `supabase/seed.sql`, then `notify pgrst, 'reload schema';` so the API picks up the new tables and relationships immediately.
 2. Copy `.env.example` to `.env.local` and fill it. `NEXT_PUBLIC_APP_URL` must be the final production domain, because it is baked into every installed signature.
 3. In Supabase Auth settings, add `https://APP/auth/callback` to the redirect URLs and enable the Email provider.
 4. `npm install`, then `npm run dev`. Sign in at `/login` with an address from `ADMIN_EMAILS` or the `admins` table.
-5. Upload the current carousel banner under Banners and click Make default.
+5. On Vercel, turn Deployment Protection (Vercel Authentication) off for this project. Colleagues open their install links and mail clients load `/b/{token}` without any Vercel session.
+6. Upload the current carousel banner under Banners and click Make default.
 
 ## Commands
 
