@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Image as ImageIcon, LayoutDashboard, LayoutTemplate, LogOut, ShieldCheck, Users, UsersRound } from "lucide-react";
+import { CalendarDays, Image as ImageIcon, LayoutDashboard, LayoutTemplate, LogOut, ShieldCheck, Stethoscope, Users, UsersRound } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 
 const nav = [
@@ -10,6 +10,7 @@ const nav = [
   { href: "/admin/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/admin/templates", label: "Templates", icon: LayoutTemplate },
   { href: "/admin/admins", label: "Admins", icon: ShieldCheck },
+  { href: "/admin/debug", label: "Debug", icon: Stethoscope },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
